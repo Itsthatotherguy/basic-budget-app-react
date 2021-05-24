@@ -1,7 +1,7 @@
 import { FC } from "react";
-import NewCategoryForm from "../../components/Categories/NewCategoryForm/NewCategoryForm";
-import PageContent from "../../components/UI/PageContent/PageContent";
-import PageHeader from "../../components/UI/PageHeader/PageHeader";
+import PageHeader from "../../../app/components/PageHeader/PageHeader";
+import PageContent from "../../../app/components/PageContent/PageContent";
+import NewCategoryForm from "../components/NewCategoryForm/NewCategoryForm";
 
 const NewCategory: FC = () => {
   return (

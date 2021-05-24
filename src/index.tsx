@@ -7,7 +7,7 @@ import { store } from "./app/store";
 import { Provider } from "react-redux";
 import * as serviceWorker from "./serviceWorker";
 import "antd/dist/antd.css";
-import { makeServer } from "./mirage";
+import { makeServer } from "./api/mock-server/server";
 
 makeServer({ environment: "development" });
 

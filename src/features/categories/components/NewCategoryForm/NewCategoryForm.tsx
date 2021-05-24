@@ -1,12 +1,11 @@
-import { FC } from "react";
+import { FC, useState } from "react";
 import { Button, Form, Input, message, Radio, Space } from "antd";
-import useHttp from "../../../hooks/useHttp";
-import { CategoryType, CreateCategoryDto } from "../../../models/category";
-import ErrorAlert from "../../UI/ErrorAlert/ErrorAlert";
 import { useHistory } from "react-router";
-import { useAppDispatch } from "../../../app/hooks";
-import { categoryAdded } from "../../../features/categories/categoriesSlice";
-import { nanoid } from "@reduxjs/toolkit";
+import { unwrapResult } from "@reduxjs/toolkit";
+import { CategoryType, CreateCategoryDto } from "../../store/models";
+import { useAppDispatch } from "../../../../app/hooks";
+import ErrorAlert from "../../../../app/components/ErrorAlert/ErrorAlert";
+import { addNewCategory } from "../../store/categoriesSlice";
 
 const initialValues: CreateCategoryDto = {
   name: "",
@@ -15,28 +14,24 @@ const initialValues: CreateCategoryDto = {
 
 const NewCategoryForm: FC = () => {
   const [form] = Form.useForm();
-  const { error, isLoading, sendRequest: createCategoryRequest } = useHttp();
   const history = useHistory();
   const dispatch = useAppDispatch();
+  const [error, setError] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
 
-  const handleSubmitSuccess = (values: CreateCategoryDto) => {
-    dispatch(categoryAdded(values));
+  const handleSubmitSuccess = async (values: CreateCategoryDto) => {
+    try {
+      setIsAdding(true);
 
-    form.resetFields();
-    history.push("/categories");
+      const resultAction = await dispatch(addNewCategory(values));
+      unwrapResult(resultAction);
 
-    // createCategoryRequest(
-    //   {
-    //     url: "/api/categories",
-    //     method: "POST",
-    //     body: values,
-    //   },
-    //   () => {
-    //     message.success("Category successfully created.");
-    //     form.resetFields();
-    //     history.push("/categories");
-    //   }
-    // );
+      history.push("/categories");
+    } catch (error) {
+      setError(error);
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const handleSubmitFail = () => {
@@ -82,7 +77,7 @@ const NewCategoryForm: FC = () => {
 
         <Form.Item>
           <Space>
-            <Button type="primary" htmlType="submit" loading={isLoading}>
+            <Button type="primary" htmlType="submit" loading={isAdding}>
               Save
             </Button>
             <Button htmlType="button" onClick={handleClearForm}>

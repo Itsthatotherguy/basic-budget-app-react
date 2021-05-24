@@ -8,13 +8,18 @@ import {
   Response,
   RestSerializer,
 } from "miragejs";
-import { BelongsTo, ModelDefinition, Registry } from "miragejs/-types";
+import { ModelDefinition, Registry } from "miragejs/-types";
 import Schema from "miragejs/orm/schema";
-import { Category, CategoryType } from "./models/category";
-import { Transaction } from "./models/transaction";
+import { Category, CategoryType } from "../../features/categories/store/models";
+import { Transaction } from "../../features/transactions/store/models";
+import faker from "faker";
 
-const CategoryModel: ModelDefinition<Category> = Model.extend({});
-const TransactionModel: ModelDefinition<Transaction> = Model.extend({});
+const CategoryModel: ModelDefinition<Category> = Model.extend({
+  transactions: hasMany(),
+});
+const TransactionModel: ModelDefinition<Transaction> = Model.extend({
+  category: belongsTo(),
+});
 
 type AppRegistry = Registry<
   {
@@ -25,12 +30,6 @@ type AppRegistry = Registry<
 >;
 
 type AppSchema = Schema<AppRegistry>;
-//   interface CategoryResponse {
-//     categories: Category[];
-//   }
-
-// export const fetchPeople = (url: string) =>
-//   fetch(url).then<PeopleResponse>((r) => r.json());
 
 export function makeServer({ environment = "test" } = {}) {
   let server = createServer({
@@ -38,9 +37,43 @@ export function makeServer({ environment = "test" } = {}) {
 
     serializers: {
       category: RestSerializer.extend({}),
+      transaction: RestSerializer.extend({
+        include: ["category"],
+        embed: true,
+      }),
     },
 
-    factories: {},
+    factories: {
+      category: Factory.extend({
+        name() {
+          return faker.commerce.department();
+        },
+
+        type() {
+          return Math.round(Math.random()) === 0
+            ? CategoryType.Income
+            : CategoryType.Expenses;
+        },
+      }),
+
+      transaction: Factory.extend({
+        date() {
+          return faker.date.recent();
+        },
+
+        description() {
+          return faker.random.words(3);
+        },
+
+        amount() {
+          return faker.datatype.float(10000);
+        },
+
+        isReviewed() {
+          return faker.datatype.boolean();
+        },
+      }),
+    },
 
     models: {
       category: CategoryModel,
@@ -48,27 +81,12 @@ export function makeServer({ environment = "test" } = {}) {
     },
 
     seeds(server) {
-      server.create("category", {
-        name: "Salary - Chris",
-        type: CategoryType.Income,
-      });
-      server.create("category", {
-        name: "Salary - Melanie",
-        type: CategoryType.Income,
-      });
-      server.create("category", {
-        name: "Domestic Wages",
-        type: CategoryType.Expenses,
-      });
-      server.create("category", {
-        name: "Mortgage",
-        type: CategoryType.Expenses,
+      server.createList("category", 5).forEach((category) => {
+        server.createList("transaction", 10, { category });
       });
     },
 
     routes() {
-      this.passthrough("/_next/static/development/_devPagesManifest.json");
-
       this.get("/api/categories", (schema: AppSchema) => {
         const categories = schema.all("category");
 
@@ -97,7 +115,7 @@ export function makeServer({ environment = "test" } = {}) {
           ...body,
         });
 
-        return new Response(204);
+        return new Response(201, {}, { id });
       });
 
       this.delete(
@@ -107,11 +125,17 @@ export function makeServer({ environment = "test" } = {}) {
 
           schema.find("category", id)?.destroy();
 
-          return new Response(204);
+          return new Response(201, {}, { id });
         }
       );
+
+      this.get("/api/transactions", (schema: AppSchema) => {
+        const transactions = schema.all("transaction");
+        console.log(transactions);
+        return new Response(200, {}, transactions);
+      });
     },
   });
-
+  console.log(server.db.dump());
   return server;
 }
