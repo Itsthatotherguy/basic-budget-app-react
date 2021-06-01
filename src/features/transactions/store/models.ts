@@ -4,9 +4,19 @@ export interface Transaction {
   description: string;
   category: any;
   amount: number;
-  isReviewed: boolean;
 }
 
 export interface TransactionsResponse {
   transactions: Transaction[];
+}
+
+export interface CreateTransactionDto {
+  date: string;
+  description: string;
+  category: string;
+  amount: number;
+}
+
+export interface TransactionResponse {
+  transaction: Transaction;
 }

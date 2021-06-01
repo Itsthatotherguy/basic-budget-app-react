@@ -1,8 +1,10 @@
-import Table, { ColumnsType } from "antd/lib/table";
 import { FC } from "react";
+import Table, { ColumnsType } from "antd/lib/table";
 import { Transaction } from "../../store/models";
 import dayjs from "dayjs";
 import numeral from "numeral";
+import ActionsDropdown from "../ActionsDropdown/ActionsDropdown";
+import { useAppDispatch } from "../../../../app/hooks";
 
 const columns: ColumnsType<Transaction> = [
   {
@@ -43,6 +45,10 @@ const columns: ColumnsType<Transaction> = [
       },
     }),
     render: (amount) => numeral(amount).format("0,0.00"),
+  },
+  {
+    align: "right",
+    render: (_, transaction) => <ActionsDropdown transaction={transaction} />,
   },
 ];
 

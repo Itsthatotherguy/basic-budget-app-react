@@ -68,10 +68,6 @@ export function makeServer({ environment = "test" } = {}) {
         amount() {
           return faker.datatype.float(10000);
         },
-
-        isReviewed() {
-          return faker.datatype.boolean();
-        },
       }),
     },
 
@@ -134,8 +130,29 @@ export function makeServer({ environment = "test" } = {}) {
         console.log(transactions);
         return new Response(200, {}, transactions);
       });
+
+      this.post("/api/transactions", (schema: AppSchema, request: Request) => {
+        let attrs = JSON.parse(request.requestBody);
+
+        attrs.category = schema.find("category", attrs.category);
+
+        const transaction = schema.create("transaction", attrs);
+
+        return new Response(201, {}, transaction);
+      });
+
+      this.delete(
+        "/api/transactions/:id",
+        (schema: AppSchema, request: Request) => {
+          const id = request.params.id;
+
+          schema.find("transaction", id)?.destroy();
+
+          return new Response(201, {}, { id });
+        }
+      );
     },
   });
-  console.log(server.db.dump());
+
   return server;
 }
