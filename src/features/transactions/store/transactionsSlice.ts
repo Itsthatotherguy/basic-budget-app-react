@@ -6,13 +6,21 @@ import {
   EntityId,
   PayloadAction,
 } from "@reduxjs/toolkit";
-import { CreateTransactionDto, Transaction } from "./models";
+import {
+  CreateTransactionDto,
+  Transaction,
+  UpdateTransactionDto,
+  ListTransactionsDto,
+} from "./models";
 import * as client from "../transactions-client";
 import { RootState } from "../../../app/store";
+import { selectAllCategoryEntities } from "../../categories/store/categoriesSlice";
 
 interface SliceState {
   isAddNewTransactionFormVisible: boolean;
-  currentEditingTransactionId: string | null;
+  isFetchingTransactions: boolean;
+  editingId: EntityId;
+  isUpdateTransactionModalVisible: boolean;
 }
 
 const adapter = createEntityAdapter({
@@ -22,24 +30,22 @@ const adapter = createEntityAdapter({
 
 const initialState = adapter.getInitialState<SliceState>({
   isAddNewTransactionFormVisible: false,
-  currentEditingTransactionId: null,
+  isFetchingTransactions: true,
+  editingId: "",
+  isUpdateTransactionModalVisible: false,
 });
 
 export const fetchTransactions = createAsyncThunk(
   "transactions/fetchTransactions",
   async () => {
-    const response = await client.read();
-
-    return response.transactions;
+    return client.read();
   }
 );
 
 export const addNewTransaction = createAsyncThunk(
   "transactions/addNewTransaction",
   async (createTransactionDto: CreateTransactionDto) => {
-    const response = await client.create(createTransactionDto);
-
-    return response.transaction;
+    return client.create(createTransactionDto);
   }
 );
 
@@ -52,6 +58,27 @@ export const removeTransaction = createAsyncThunk(
   }
 );
 
+export const updateTransaction = createAsyncThunk(
+  "transactions/updateTransaction",
+  async (updateTransactionDto: UpdateTransactionDto) => {
+    await client.update(updateTransactionDto);
+
+    const { id, ...changes } = updateTransactionDto;
+
+    const toReturn = {
+      id,
+      changes,
+    };
+
+    console.log(toReturn);
+
+    return {
+      id,
+      changes,
+    };
+  }
+);
+
 const transactionsSlice = createSlice({
   name: "transactions",
   initialState,
@@ -61,22 +88,34 @@ const transactionsSlice = createSlice({
     },
     hideNewTransactionForm: (state) => {
       state.isAddNewTransactionFormVisible = false;
-      state.currentEditingTransactionId = null;
     },
-    setCurrentEditingTransactionId: (state, action: PayloadAction<string>) => {
-      state.currentEditingTransactionId = action.payload;
-      state.isAddNewTransactionFormVisible = true;
+    showUpdateTransactionModal: (state, action: PayloadAction<string>) => {
+      state.isUpdateTransactionModalVisible = true;
+      state.editingId = action.payload;
+    },
+    hideUpdateTransactionModal: (state) => {
+      state.isUpdateTransactionModalVisible = false;
+      state.editingId = "";
     },
   },
   extraReducers: (builder) => {
     builder.addCase(fetchTransactions.fulfilled, (state, action) => {
       adapter.upsertMany(state, action.payload);
+      state.isFetchingTransactions = false;
     });
     builder.addCase(addNewTransaction.fulfilled, (state, action) => {
       adapter.addOne(state, action.payload);
     });
     builder.addCase(removeTransaction.fulfilled, (state, action) => {
       adapter.removeOne(state, action.payload);
+    });
+    builder.addCase(updateTransaction.fulfilled, (state, action) => {
+      adapter.updateOne(state, action.payload);
+      state.isUpdateTransactionModalVisible = false;
+      state.editingId = "";
+    });
+    builder.addCase(updateTransaction.rejected, (state, action) => {
+      console.log(action.error);
     });
   },
 });
@@ -86,13 +125,12 @@ export default transactionsSlice.reducer;
 export const {
   hideNewTransactionForm,
   unhideNewTransactionForm,
-  setCurrentEditingTransactionId,
+  hideUpdateTransactionModal,
+  showUpdateTransactionModal,
 } = transactionsSlice.actions;
 
-export const {
-  selectAll: selectAllTransactions,
-  selectById: selectTransactionById,
-} = adapter.getSelectors((state: RootState) => state.transactions);
+export const { selectAll, selectById: selectTransactionById } =
+  adapter.getSelectors((state: RootState) => state.transactions);
 
 export const selectTransactionsState = (state: RootState) => state.transactions;
 
@@ -101,13 +139,31 @@ export const selectIsNewTransactionFormVisible = createSelector(
   (state) => state.isAddNewTransactionFormVisible
 );
 
-export const selectCurrentEditingTransactionId = createSelector(
+export const selectIsFetchingTransactions = createSelector(
   [selectTransactionsState],
-  (state) => state.currentEditingTransactionId
+  (state) => state.isFetchingTransactions
 );
 
-export const selectCurrentEditingTransaction = createSelector(
-  [selectCurrentEditingTransactionId, (state: RootState) => state],
-  (currentEditingTransactionId, state) =>
-    selectTransactionById(state, currentEditingTransactionId as EntityId)
+export const selectAllTransactions = createSelector(
+  [selectAll, selectAllCategoryEntities],
+  (transactions, categoryEntities): ListTransactionsDto[] =>
+    transactions.map((transaction) => ({
+      id: transaction.id,
+      key: `transaction-${transaction.id}`,
+      date: transaction.date,
+      description: transaction.description,
+      amount: transaction.amount,
+      category: {
+        id: transaction.categoryId,
+        name: categoryEntities[transaction.categoryId]?.name!,
+      },
+    }))
 );
+
+export const selectIsUpdateTransactionModalVisible = createSelector(
+  [selectTransactionsState],
+  (state) => state.isUpdateTransactionModalVisible
+);
+
+export const selectEditingTransaction = (state: RootState) =>
+  selectTransactionById(state, state.transactions.editingId);

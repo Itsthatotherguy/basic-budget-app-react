@@ -11,13 +11,13 @@ import {
 import { ModelDefinition, Registry } from "miragejs/-types";
 import Schema from "miragejs/orm/schema";
 import { Category, CategoryType } from "../../features/categories/store/models";
-import { Transaction } from "../../features/transactions/store/models";
+import { TransactionEntity } from "../../features/transactions/store/models";
 import faker from "faker";
 
 const CategoryModel: ModelDefinition<Category> = Model.extend({
   transactions: hasMany(),
 });
-const TransactionModel: ModelDefinition<Transaction> = Model.extend({
+const TransactionModel: ModelDefinition<TransactionEntity> = Model.extend({
   category: belongsTo(),
 });
 
@@ -149,6 +149,20 @@ export function makeServer({ environment = "test" } = {}) {
           schema.find("transaction", id)?.destroy();
 
           return new Response(201, {}, { id });
+        }
+      );
+
+      this.put(
+        "/api/transactions/:id",
+        (schema: AppSchema, request: Request) => {
+          const id = request.params.id;
+          const body = request.requestBody as Partial<Category>;
+
+          schema.find("transaction", id)?.update({
+            ...body,
+          });
+
+          return new Response(204, {}, {});
         }
       );
     },

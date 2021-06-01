@@ -2,10 +2,10 @@ import { FC } from "react";
 import { Dropdown, Button } from "antd";
 import { MoreOutlined } from "@ant-design/icons";
 import ActionsMenu from "./ActionsMenu";
-import { Transaction } from "../../store/models";
+import { ListTransactionsDto } from "../../store/models";
 
 interface Props {
-  transaction: Transaction;
+  transaction: ListTransactionsDto;
 }
 
 const ActionsDropdown: FC<Props> = ({ transaction }) => {

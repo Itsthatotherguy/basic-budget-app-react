@@ -1,22 +1,59 @@
-export interface Transaction {
+import { Category } from "../../categories/store/models";
+
+export interface TransactionEntity {
   id: string;
-  date: Date;
+  date: string;
   description: string;
-  category: any;
+  category: Category;
   amount: number;
 }
 
 export interface TransactionsResponse {
-  transactions: Transaction[];
+  transactions: TransactionEntity[];
+}
+
+export interface TransactionResponse {
+  transaction: TransactionEntity;
+}
+
+export interface Transaction {
+  id: string;
+  date: string;
+  description: string;
+  categoryId: string;
+  amount: number;
+}
+
+export interface ListTransactionsDto {
+  id: string;
+  key: string;
+  date: string;
+  description: string;
+  amount: number;
+  category: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface CreateTransactionDto {
   date: string;
   description: string;
-  category: string;
+  categoryId: string;
   amount: number;
 }
 
-export interface TransactionResponse {
-  transaction: Transaction;
+export interface UpdateTransactionDto {
+  id: string;
+  date: string;
+  description: string;
+  categoryId: string;
+  amount: number;
+}
+
+export interface FormValues {
+  date: Date;
+  description: string;
+  categoryId: string;
+  amount: number;
 }

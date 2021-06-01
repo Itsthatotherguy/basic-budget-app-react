@@ -6,23 +6,23 @@ import {
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useAppDispatch } from "../../../../app/hooks";
-import { Transaction } from "../../store/models";
+import { ListTransactionsDto } from "../../store/models";
 import {
   removeTransaction,
-  setCurrentEditingTransactionId,
+  showUpdateTransactionModal,
 } from "../../store/transactionsSlice";
 
 const { confirm } = Modal;
 
 interface Props {
-  transaction: Transaction;
+  transaction: ListTransactionsDto;
 }
 
 const ActionsMenu: FC<Props> = ({ transaction }) => {
   const dispatch = useAppDispatch();
 
   const handleClickEdit = () => {
-    dispatch(setCurrentEditingTransactionId(transaction.id));
+    dispatch(showUpdateTransactionModal(transaction.id));
   };
 
   const handleClickDelete = () => {

@@ -12,13 +12,11 @@ import { makeServer } from "./api/mock-server/server";
 makeServer({ environment: "development" });
 
 ReactDOM.render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <Provider store={store}>
-        <App />
-      </Provider>
-    </BrowserRouter>
-  </React.StrictMode>,
+  <BrowserRouter>
+    <Provider store={store}>
+      <App />
+    </Provider>
+  </BrowserRouter>,
   document.getElementById("root")
 );
 

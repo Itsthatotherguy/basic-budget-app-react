@@ -1,53 +1,22 @@
-import { FC, useEffect, useState } from "react";
-import { Button, DatePicker, Form, Input, Row, Select, Space } from "antd";
-import { useAppDispatch, useAppSelector } from "../../../../app/hooks";
-import {
-  fetchCategories,
-  selectExpenseCategories,
-  selectIncomeCategories,
-} from "../../../categories/store/categoriesSlice";
+import { FC, useState } from "react";
+import { Button, DatePicker, Form, Input, Row, Space } from "antd";
+import { useAppDispatch } from "../../../../app/hooks";
 import {
   addNewTransaction,
   hideNewTransactionForm,
 } from "../../store/transactionsSlice";
 import { unwrapResult } from "@reduxjs/toolkit";
 import ErrorAlert from "../../../../app/components/ErrorAlert/ErrorAlert";
-
-interface FormValues {
-  date: Date;
-  description: string;
-  category: string;
-  amount: number;
-}
+import CategoriesSelect from "../CategoriesSelect/CategoriesSelect";
+import { FormValues } from "../../store/models";
 
 const NewTransactionForm: FC = () => {
   const [form] = Form.useForm();
 
   const dispatch = useAppDispatch();
-  const incomeCategories = useAppSelector(selectIncomeCategories);
-  const expenseCategories = useAppSelector(selectExpenseCategories);
 
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isSavingTransaction, setIsSavingTransaction] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchCategoryData = async () => {
-      try {
-        setIsLoadingCategories(true);
-
-        const actionResult = await dispatch(fetchCategories());
-        unwrapResult(actionResult);
-      } catch (error) {
-        setError(error);
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    };
-    if (incomeCategories.length < 1 || expenseCategories.length < 1) {
-      fetchCategoryData();
-    }
-  }, [incomeCategories, expenseCategories, dispatch]);
 
   const handleClickSave = () => {
     try {
@@ -117,22 +86,7 @@ const NewTransactionForm: FC = () => {
           ]}
           style={{ flexGrow: 2 }}
         >
-          <Select loading={isLoadingCategories} placeholder="Category">
-            <Select.OptGroup label="Income">
-              {incomeCategories.map((category) => (
-                <Select.Option key={category.id} value={category.id}>
-                  {category.name}
-                </Select.Option>
-              ))}
-            </Select.OptGroup>
-            <Select.OptGroup label="Expense">
-              {expenseCategories.map((category) => (
-                <Select.Option key={category.id} value={category.id}>
-                  {category.name}
-                </Select.Option>
-              ))}
-            </Select.OptGroup>
-          </Select>
+          <CategoriesSelect />
         </Form.Item>
         <Form.Item
           name="amount"

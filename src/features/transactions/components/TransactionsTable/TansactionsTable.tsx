@@ -1,65 +1,74 @@
-import { FC } from "react";
-import Table, { ColumnsType } from "antd/lib/table";
-import { Transaction } from "../../store/models";
+import React, { FC } from "react";
+import { Form, Table } from "antd";
+import { ListTransactionsDto } from "../../store/models";
 import dayjs from "dayjs";
 import numeral from "numeral";
 import ActionsDropdown from "../ActionsDropdown/ActionsDropdown";
-import { useAppDispatch } from "../../../../app/hooks";
+import { useAppSelector } from "../../../../app/hooks";
+import { selectAllTransactions } from "../../store/transactionsSlice";
+import { ColumnsType } from "antd/lib/table";
 
-const columns: ColumnsType<Transaction> = [
-  {
-    title: "Date",
-    dataIndex: "date",
-    onCell: () => ({
-      style: {
-        width: "10%",
-      },
-    }),
-    render: (date) => dayjs(date).format("YYYY/MM/DD"),
-  },
-  {
-    title: "Description",
-    dataIndex: "description",
-    onCell: () => ({
-      style: {
-        width: "60%",
-      },
-    }),
-  },
-  {
-    title: "Category",
-    dataIndex: ["category", "name"],
-    onCell: () => ({
-      style: {
-        width: "20%",
-      },
-    }),
-  },
-  {
-    title: "Amount",
-    dataIndex: "amount",
-    align: "right",
-    onCell: () => ({
-      style: {
-        width: "10%",
-      },
-    }),
-    render: (amount) => numeral(amount).format("0,0.00"),
-  },
-  {
-    align: "right",
-    render: (_, transaction) => <ActionsDropdown transaction={transaction} />,
-  },
-];
+const TransactionsTable: FC = () => {
+  const transactions = useAppSelector((state) => selectAllTransactions(state));
 
-interface Props {
-  transactions: Transaction[];
-  isLoading: boolean;
-}
+  const columns = [
+    {
+      title: "Date",
+      dataIndex: "date",
+      key: "name",
+      onCell: () => ({
+        style: {
+          width: "10%",
+        },
+      }),
+      render: (date: Date) => dayjs(date).format("YYYY/MM/DD"),
+    },
+    {
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+      onCell: () => ({
+        style: {
+          width: "60%",
+        },
+      }),
+    },
+    {
+      title: "Category",
+      dataIndex: ["category", "name"],
+      key: "category",
+      onCell: () => ({
+        style: {
+          width: "20%",
+        },
+      }),
+    },
+    {
+      title: "Amount",
+      dataIndex: "amount",
+      key: "amount",
+      align: "right",
+      onCell: () => ({
+        style: {
+          width: "10%",
+        },
+      }),
+      render: (amount: number) => numeral(amount).format("0,0.00"),
+    },
+    {
+      dataIndex: "actions",
+      align: "right",
+      render: (_: any, transaction: ListTransactionsDto) => {
+        return <ActionsDropdown transaction={transaction} />;
+      },
+    },
+  ];
 
-const TransactionsTable: FC<Props> = ({ transactions, isLoading }) => {
   return (
-    <Table columns={columns} dataSource={transactions} loading={isLoading} />
+    <Table
+      columns={columns as ColumnsType<ListTransactionsDto>}
+      dataSource={transactions}
+    />
   );
 };
 
