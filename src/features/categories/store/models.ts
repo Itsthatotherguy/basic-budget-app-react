@@ -1,3 +1,5 @@
+import { createAction } from "@reduxjs/toolkit";
+
 export enum CategoryType {
   Income = "Income",
   Expenses = "Expenses",
@@ -6,29 +8,24 @@ export enum CategoryType {
 export interface Category {
   id: string;
   name: string;
-  type: CategoryType;
+  categoryType: CategoryType;
 }
 
-export interface CategoriesResponse {
+export interface ListCategoriesDto {
   categories: Category[];
 }
 
-export interface CategoryResponse {
+export interface ViewCategoriesDto {
   category: Category;
 }
 
 export interface CreateCategoryDto {
   name: string;
-  type: CategoryType;
+  categoryType: CategoryType;
 }
 
-export interface UpdateCategoryDto {
+export interface UpdateCategoryDto extends CreateCategoryDto {
   id: string;
-  name: string;
-  type: CategoryType;
 }
 
-export interface CategoryFormValues {
-  name: string;
-  type: CategoryType;
-}
+export interface CategoryFormValues extends CreateCategoryDto {}

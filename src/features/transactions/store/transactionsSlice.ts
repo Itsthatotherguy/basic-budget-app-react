@@ -5,79 +5,109 @@ import {
   createSlice,
   EntityId,
   PayloadAction,
+  Update,
 } from "@reduxjs/toolkit";
 import {
   CreateTransactionDto,
   Transaction,
   UpdateTransactionDto,
-  ListTransactionsDto,
 } from "./models";
 import * as client from "../transactions-client";
 import { RootState } from "../../../app/store";
-import { selectAllCategoryEntities } from "../../categories/store/categoriesSlice";
+import { RequestStatus } from "../../../app/models";
 
 interface SliceState {
+  status: RequestStatus;
   isAddNewTransactionFormVisible: boolean;
-  isFetchingTransactions: boolean;
   editingId: EntityId;
   isUpdateTransactionModalVisible: boolean;
 }
 
-const adapter = createEntityAdapter({
-  sortComparer: (a: Transaction, b: Transaction) =>
-    a.date.toString().localeCompare(b.date.toString()) * -1,
-});
+const adapter = createEntityAdapter<Transaction>();
 
 const initialState = adapter.getInitialState<SliceState>({
+  status: "idle",
   isAddNewTransactionFormVisible: false,
-  isFetchingTransactions: true,
   editingId: "",
   isUpdateTransactionModalVisible: false,
 });
 
-export const fetchTransactions = createAsyncThunk(
-  "transactions/fetchTransactions",
-  async () => {
-    return client.read();
+export const fetchTransactions = createAsyncThunk<
+  Transaction[],
+  null,
+  {
+    rejectValue: string[];
   }
-);
+>("transactions/fetchTransactions", async (_, { rejectWithValue }) => {
+  try {
+    const response = await client.read();
 
-export const addNewTransaction = createAsyncThunk(
-  "transactions/addNewTransaction",
-  async (createTransactionDto: CreateTransactionDto) => {
-    return client.create(createTransactionDto);
+    return response.transactions;
+  } catch (err) {
+    const errors: string[] = err;
+
+    return rejectWithValue(errors);
   }
-);
+});
 
-export const removeTransaction = createAsyncThunk(
-  "transactions/removeTransaction",
-  async (id: string) => {
+export const addNewTransaction = createAsyncThunk<
+  Transaction,
+  CreateTransactionDto,
+  {
+    rejectValue: string[];
+  }
+>("transactions/addNewTransaction", async (dto, { rejectWithValue }) => {
+  try {
+    const response = await client.create(dto);
+
+    return response.transaction;
+  } catch (err) {
+    const errors: string[] = err;
+
+    return rejectWithValue(errors);
+  }
+});
+
+export const removeTransaction = createAsyncThunk<
+  string,
+  string,
+  {
+    rejectValue: string[];
+  }
+>("transactions/removeTransaction", async (id, { rejectWithValue }) => {
+  try {
     await client.remove(id);
 
     return id;
+  } catch (err) {
+    const errors: string[] = err;
+
+    return rejectWithValue(errors);
   }
-);
+});
 
-export const updateTransaction = createAsyncThunk(
-  "transactions/updateTransaction",
-  async (updateTransactionDto: UpdateTransactionDto) => {
-    await client.update(updateTransactionDto);
+export const updateTransaction = createAsyncThunk<
+  Update<Transaction>,
+  UpdateTransactionDto,
+  {
+    rejectValue: string[];
+  }
+>("transactions/updateTransaction", async (dto, { rejectWithValue }) => {
+  try {
+    await client.update(dto);
 
-    const { id, ...changes } = updateTransactionDto;
-
-    const toReturn = {
-      id,
-      changes,
-    };
-
-    console.log(toReturn);
+    const { id, ...changes } = dto;
 
     return {
       id,
       changes,
     };
+  } catch (err) {
+    const errors: string[] = err;
+
+    return rejectWithValue(errors);
   }
-);
+});
 
 const transactionsSlice = createSlice({
   name: "transactions",
@@ -99,23 +129,48 @@ const transactionsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    builder.addCase(fetchTransactions.pending, (state) => {
+      state.status = "loading";
+    });
     builder.addCase(fetchTransactions.fulfilled, (state, action) => {
+      state.status = "succeeded";
       adapter.upsertMany(state, action.payload);
-      state.isFetchingTransactions = false;
+    });
+    builder.addCase(fetchTransactions.rejected, (state) => {
+      state.status = "fail";
+    });
+
+    builder.addCase(addNewTransaction.pending, (state) => {
+      state.status = "loading";
     });
     builder.addCase(addNewTransaction.fulfilled, (state, action) => {
       adapter.addOne(state, action.payload);
     });
+    builder.addCase(addNewTransaction.rejected, (state) => {
+      state.status = "fail";
+    });
+
+    builder.addCase(removeTransaction.pending, (state) => {
+      state.status = "loading";
+    });
     builder.addCase(removeTransaction.fulfilled, (state, action) => {
       adapter.removeOne(state, action.payload);
+    });
+    builder.addCase(removeTransaction.rejected, (state) => {
+      state.status = "fail";
+    });
+
+    builder.addCase(updateTransaction.pending, (state, action) => {
+      state.status = "loading";
     });
     builder.addCase(updateTransaction.fulfilled, (state, action) => {
       adapter.updateOne(state, action.payload);
       state.isUpdateTransactionModalVisible = false;
       state.editingId = "";
+      state.status = "succeeded";
     });
     builder.addCase(updateTransaction.rejected, (state, action) => {
-      console.log(action.error);
+      state.status = "fail";
     });
   },
 });
@@ -139,27 +194,6 @@ export const selectIsNewTransactionFormVisible = createSelector(
   (state) => state.isAddNewTransactionFormVisible
 );
 
-export const selectIsFetchingTransactions = createSelector(
-  [selectTransactionsState],
-  (state) => state.isFetchingTransactions
-);
-
-export const selectAllTransactions = createSelector(
-  [selectAll, selectAllCategoryEntities],
-  (transactions, categoryEntities): ListTransactionsDto[] =>
-    transactions.map((transaction) => ({
-      id: transaction.id,
-      key: `transaction-${transaction.id}`,
-      date: transaction.date,
-      description: transaction.description,
-      amount: transaction.amount,
-      category: {
-        id: transaction.categoryId,
-        name: categoryEntities[transaction.categoryId]?.name!,
-      },
-    }))
-);
-
 export const selectIsUpdateTransactionModalVisible = createSelector(
   [selectTransactionsState],
   (state) => state.isUpdateTransactionModalVisible
@@ -167,3 +201,17 @@ export const selectIsUpdateTransactionModalVisible = createSelector(
 
 export const selectEditingTransaction = (state: RootState) =>
   selectTransactionById(state, state.transactions.editingId);
+
+export const selectAllTransactions = createSelector(
+  [selectAll],
+  (transactions) =>
+    transactions.map((transaction) => ({
+      ...transaction,
+      key: `transaction-${transaction.id}`,
+    }))
+);
+
+export const selectTransactionsStatus = createSelector(
+  [selectTransactionsState],
+  (state) => state.status
+);

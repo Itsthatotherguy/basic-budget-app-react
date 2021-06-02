@@ -33,7 +33,7 @@ const UpdateTransactionModal: FC = () => {
   let initialFormValues: FormValues = {
     date: moment(transaction?.date),
     description: transaction?.description || "",
-    category: transaction?.categoryId || "",
+    category: transaction?.category.id || "",
     amount: numeral(transaction?.amount).format("0,0.00") || "",
   };
 

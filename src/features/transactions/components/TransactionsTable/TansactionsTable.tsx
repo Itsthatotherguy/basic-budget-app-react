@@ -1,6 +1,6 @@
 import React, { FC } from "react";
-import { Form, Table } from "antd";
-import { ListTransactionsDto } from "../../store/models";
+import { Table } from "antd";
+import { Transaction } from "../../store/models";
 import dayjs from "dayjs";
 import numeral from "numeral";
 import ActionsDropdown from "../ActionsDropdown/ActionsDropdown";
@@ -29,7 +29,7 @@ const TransactionsTable: FC = () => {
       key: "description",
       onCell: () => ({
         style: {
-          width: "60%",
+          width: "40%",
         },
       }),
     },
@@ -53,12 +53,27 @@ const TransactionsTable: FC = () => {
           width: "10%",
         },
       }),
-      render: (amount: number) => numeral(amount).format("0,0.00"),
+    },
+    {
+      title: "Balance",
+      dataIndex: "balance",
+      key: "balance",
+      align: "right",
+      onCell: () => ({
+        style: {
+          width: "15%",
+        },
+      }),
     },
     {
       dataIndex: "actions",
       align: "right",
-      render: (_: any, transaction: ListTransactionsDto) => {
+      onCell: () => ({
+        style: {
+          width: "5%",
+        },
+      }),
+      render: (_: any, transaction: Transaction) => {
         return <ActionsDropdown transaction={transaction} />;
       },
     },
@@ -66,7 +81,7 @@ const TransactionsTable: FC = () => {
 
   return (
     <Table
-      columns={columns as ColumnsType<ListTransactionsDto>}
+      columns={columns as ColumnsType<Transaction>}
       dataSource={transactions}
     />
   );

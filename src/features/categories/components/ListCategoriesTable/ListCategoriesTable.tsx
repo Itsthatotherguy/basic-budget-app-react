@@ -6,7 +6,6 @@ import { Category } from "../../store/models";
 import DeletePopconfirm from "./DeletePopconfirm/DeletePopconfirm";
 
 interface Props {
-  isLoading: boolean;
   categories: Category[];
 }
 
@@ -18,7 +17,7 @@ const columns: ColumnsType<Category> = [
   },
   {
     title: "Type",
-    dataIndex: "type",
+    dataIndex: "categoryType",
     key: "type",
   },
   {
@@ -35,15 +34,8 @@ const columns: ColumnsType<Category> = [
   },
 ];
 
-const ListCategoriesTable: FC<Props> = ({ isLoading = true, categories }) => {
-  return (
-    <Table
-      loading={isLoading}
-      columns={columns}
-      dataSource={categories}
-      pagination={false}
-    />
-  );
+const ListCategoriesTable: FC<Props> = ({ categories }) => {
+  return <Table columns={columns} dataSource={categories} pagination={false} />;
 };
 
 export default ListCategoriesTable;

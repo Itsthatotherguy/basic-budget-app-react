@@ -13,7 +13,7 @@ import { unwrapResult } from "@reduxjs/toolkit";
 const EditCategoryForm: FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
   const [isUpdating, setIsUpdating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
   const history = useHistory();
   const dispatch = useAppDispatch();
 
@@ -23,7 +23,7 @@ const EditCategoryForm: FC = () => {
 
   const initialFormValues: CategoryFormValues = {
     name: category ? category.name : "",
-    type: category ? category.type : CategoryType.Income,
+    categoryType: category ? category.categoryType : CategoryType.Income,
   };
 
   const handleFinish = async (values: CategoryFormValues) => {
@@ -39,8 +39,10 @@ const EditCategoryForm: FC = () => {
       unwrapResult(actionResult);
 
       history.push("/categories");
-    } catch (error) {
-      setError(error);
+    } catch (err) {
+      const errors: string[] = err;
+
+      setErrors(errors);
     } finally {
       setIsUpdating(false);
     }
@@ -52,9 +54,7 @@ const EditCategoryForm: FC = () => {
 
   return (
     <>
-      {error && (
-        <ErrorAlert message="Something went wrong. Please try again in a bit." />
-      )}
+      {errors.length > 0 && <ErrorAlert errors={errors} />}
       <Form
         onFinish={handleFinish}
         onFinishFailed={handleFinishFailed}

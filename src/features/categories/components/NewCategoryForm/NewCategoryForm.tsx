@@ -9,26 +9,27 @@ import { addNewCategory } from "../../store/categoriesSlice";
 
 const initialValues: CreateCategoryDto = {
   name: "",
-  type: CategoryType.Income,
+  categoryType: CategoryType.Income,
 };
 
 const NewCategoryForm: FC = () => {
   const [form] = Form.useForm();
   const history = useHistory();
   const dispatch = useAppDispatch();
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
   const [isAdding, setIsAdding] = useState(false);
 
   const handleSubmitSuccess = async (values: CreateCategoryDto) => {
     try {
       setIsAdding(true);
 
-      const resultAction = await dispatch(addNewCategory(values));
-      unwrapResult(resultAction);
+      unwrapResult(await dispatch(addNewCategory(values)));
 
       history.push("/categories");
-    } catch (error) {
-      setError(error);
+    } catch (err) {
+      const errors: string[] = err;
+
+      setErrors(errors);
     } finally {
       setIsAdding(false);
     }
@@ -46,9 +47,7 @@ const NewCategoryForm: FC = () => {
 
   return (
     <>
-      {error && (
-        <ErrorAlert message="Something went wrong. Please try again in a bit." />
-      )}
+      {errors.length > 0 && <ErrorAlert errors={errors} />}
       <Form
         layout="vertical"
         initialValues={initialValues}
@@ -65,12 +64,12 @@ const NewCategoryForm: FC = () => {
         </Form.Item>
 
         <Form.Item
-          label="Type"
-          name="type"
+          label="Category Type"
+          name="categoryType"
           rules={[{ required: true, message: "Please select a type." }]}
         >
           <Radio.Group>
-            <Radio value={CategoryType.Income}>Income</Radio>
+            <Radio value="blablalb">Income</Radio>
             <Radio value={CategoryType.Expenses}>Expenses</Radio>
           </Radio.Group>
         </Form.Item>

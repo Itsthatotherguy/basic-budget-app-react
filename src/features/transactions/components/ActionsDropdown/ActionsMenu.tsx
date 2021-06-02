@@ -6,7 +6,7 @@ import {
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useAppDispatch } from "../../../../app/hooks";
-import { ListTransactionsDto } from "../../store/models";
+import { Transaction } from "../../store/models";
 import {
   removeTransaction,
   showUpdateTransactionModal,
@@ -15,7 +15,7 @@ import {
 const { confirm } = Modal;
 
 interface Props {
-  transaction: ListTransactionsDto;
+  transaction: Transaction;
 }
 
 const ActionsMenu: FC<Props> = ({ transaction }) => {

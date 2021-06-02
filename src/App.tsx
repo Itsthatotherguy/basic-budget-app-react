@@ -10,72 +10,84 @@ import { useAppDispatch, useAppSelector } from "./app/hooks";
 import { useEffect, useState } from "react";
 import {
   fetchCategories,
-  selectIsFetchingCategories,
+  selectCategoriesStatus,
 } from "./features/categories/store/categoriesSlice";
 import {
   fetchTransactions,
-  selectIsFetchingTransactions,
+  selectTransactionsStatus,
 } from "./features/transactions/store/transactionsSlice";
-import { unwrapResult } from "@reduxjs/toolkit";
-import { Card, Spin } from "antd";
 import LoadingModal from "./app/components/LoadingModal/LoadingModal";
+import { unwrapResult } from "@reduxjs/toolkit";
+import ErrorAlert from "./app/components/ErrorAlert/ErrorAlert";
 
 function App() {
   const dispatch = useAppDispatch();
-  const isFetchingTransactions = useAppSelector((state) =>
-    selectIsFetchingTransactions(state)
+  const transactionsStatus = useAppSelector((state) =>
+    selectTransactionsStatus(state)
   );
-  const isFetchingCategories = useAppSelector((state) =>
-    selectIsFetchingCategories(state)
+  const categoriesStatus = useAppSelector((state) =>
+    selectCategoriesStatus(state)
   );
 
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
-    try {
-      setIsLoadingData(true);
+    const fetchData = async () => {
+      try {
+        unwrapResult(await dispatch(fetchCategories(null)));
+        unwrapResult(await dispatch(fetchTransactions(null)));
+      } catch (err) {
+        const errors: string[] = err;
 
-      dispatch(fetchCategories()).then((actionResult) => {
-        unwrapResult(actionResult);
-      });
+        setErrors(errors);
+      }
+    };
 
-      dispatch(fetchTransactions()).then((actionResult) => {
-        unwrapResult(actionResult);
-      });
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setIsLoadingData(false);
-    }
+    fetchData();
   }, [dispatch]);
 
   useEffect(() => {
-    setIsLoadingData(isFetchingCategories || isFetchingTransactions);
-  }, [isFetchingTransactions, isFetchingCategories]);
+    setIsLoadingData(
+      transactionsStatus === "loading" || categoriesStatus === "loading"
+    );
+  }, [transactionsStatus, categoriesStatus]);
+
+  if (isLoadingData) {
+    return (
+      <Layout>
+        <LoadingModal />
+      </Layout>
+    );
+  }
+
+  if (errors.length > 0) {
+    return (
+      <Layout>
+        <ErrorAlert errors={errors} />
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      {isLoadingData ? (
-        <LoadingModal />
-      ) : (
-        <Switch>
-          <Route path="/categories/:categoryId/edit">
-            <EditCategory />
-          </Route>
-          <Route path="/categories/new">
-            <NewCategory />
-          </Route>
-          <Route path="/categories">
-            <Categories />
-          </Route>
-          <Route path="/transactions">
-            <Transactions />
-          </Route>
-          <Route exact path="/">
-            <Home />
-          </Route>
-        </Switch>
-      )}
+      <Switch>
+        <Route path="/categories/:categoryId/edit">
+          <EditCategory />
+        </Route>
+        <Route path="/categories/new">
+          <NewCategory />
+        </Route>
+        <Route path="/categories">
+          <Categories />
+        </Route>
+        <Route path="/transactions">
+          <Transactions />
+        </Route>
+        <Route exact path="/">
+          <Home />
+        </Route>
+      </Switch>
     </Layout>
   );
 }

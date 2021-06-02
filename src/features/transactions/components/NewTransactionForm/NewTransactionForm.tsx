@@ -16,7 +16,7 @@ const NewTransactionForm: FC = () => {
   const dispatch = useAppDispatch();
 
   const [isSavingTransaction, setIsSavingTransaction] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
 
   const handleClickSave = () => {
     try {
@@ -30,7 +30,6 @@ const NewTransactionForm: FC = () => {
           const actionResult = await dispatch(
             addNewTransaction({
               ...values,
-              date: values.date.toISOString(),
             })
           );
           unwrapResult(actionResult);
@@ -38,8 +37,10 @@ const NewTransactionForm: FC = () => {
         .catch((info) => {
           console.log("Validate Failed:", info);
         });
-    } catch (error) {
-      setError(error);
+    } catch (err) {
+      const errors: string[] = err;
+
+      setErrors(errors);
     } finally {
       setIsSavingTransaction(false);
     }
@@ -51,7 +52,7 @@ const NewTransactionForm: FC = () => {
 
   return (
     <Space direction="vertical" style={{ width: "100%" }} size="middle">
-      {error && <ErrorAlert message={error} />}
+      {errors.length > 0 && <ErrorAlert errors={errors} />}
       <Form
         layout="inline"
         style={{ width: "100%" }}

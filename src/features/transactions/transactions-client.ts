@@ -1,44 +1,104 @@
 import client from "../../api/client";
-import { CategoryType } from "../categories/store/models";
+import { AxiosError, AxiosResponse } from "axios";
 import {
   CreateTransactionDto,
-  Transaction,
-  TransactionEntity,
-  TransactionResponse,
-  TransactionsResponse,
+  ListTransactionsDto,
   UpdateTransactionDto,
+  ViewTransactionDto,
 } from "./store/models";
 
-const baseUrl = "transactions";
+const baseUrl = "transaction";
 
-export async function read(): Promise<Transaction[]> {
-  const response = await client<TransactionsResponse>(`${baseUrl}/`, "GET");
-
-  return response.transactions.map((transaction) =>
-    mapEntityToModel(transaction)
-  );
+enum TransactionErrors {
+  MISSING_DATE = "MISSING_DATE",
+  MISSING_DESCRIPTION = "MISSING_DESCRIPTION",
+  MISSING_CATEGORY = "MISSING_CATEGORY",
+  MISSING_AMOUNT = "MISSING_AMOUNT",
+  MISSING_ID = "MISSING_ID",
+  NOT_FOUND = "NOT_FOUND",
 }
 
-export async function create(dto: CreateTransactionDto): Promise<Transaction> {
-  const response = await client<TransactionResponse>(baseUrl, "POST", dto);
+export async function create(
+  dto: CreateTransactionDto
+): Promise<ViewTransactionDto> {
+  return new Promise((resolve, reject) => {
+    client
+      .post(baseUrl, dto)
+      .then((response) => resolve(response.data))
+      .catch((error: AxiosError<string[]>) => {
+        if (!error.response) {
+          reject(["An unknown error has occurred."]);
+        }
 
-  return mapEntityToModel(response.transaction);
+        reject(determineErrorMessages([...error.response!.data]));
+      });
+  });
 }
 
-export function remove(id: string): Promise<void> {
-  return client<void>(`${baseUrl}/${id}`, "DELETE");
+export async function read(): Promise<ListTransactionsDto> {
+  return new Promise((resolve, reject) => {
+    client
+      .get(baseUrl)
+      .then((response) => resolve(response.data))
+      .catch((error: AxiosError<string[]>) => {
+        if (!error.response) {
+          reject(["An unknown error has occurred."]);
+        }
+
+        reject(determineErrorMessages([...error.response!.data]));
+      });
+  });
 }
 
 export function update(dto: UpdateTransactionDto): Promise<void> {
-  const { id, ...updateData } = dto;
+  return new Promise((resolve, reject) => {
+    const { id, ...updateData } = dto;
 
-  return client<void>(`${baseUrl}/${id}`, "PUT", updateData);
+    client
+      .put(`${baseUrl}/${id}`, updateData)
+      .then((response) => resolve(response.data))
+      .catch((error: AxiosError<string[]>) => {
+        if (!error.response) {
+          reject(["An unknown error has occurred."]);
+        }
+
+        reject(determineErrorMessages([...error.response!.data]));
+      });
+  });
 }
 
-const mapEntityToModel = (entity: TransactionEntity): Transaction => ({
-  id: entity.id,
-  date: entity.date,
-  description: entity.description,
-  amount: entity.amount,
-  categoryId: entity.category.id,
-});
+export function remove(id: string): Promise<AxiosResponse<void>> {
+  return new Promise((resolve, reject) => {
+    client
+      .delete(`${baseUrl}/${id}`)
+      .then((response) => resolve(response.data))
+      .catch((error: AxiosError<string[]>) => {
+        if (!error.response) {
+          reject(["An unknown error has occurred."]);
+        }
+
+        reject(determineErrorMessages([...error.response!.data]));
+      });
+  });
+}
+
+function determineErrorMessages(errors: string[]) {
+  return errors.map((error) => {
+    switch (error) {
+      case TransactionErrors.MISSING_DATE:
+        return "A date is required.";
+      case TransactionErrors.MISSING_DESCRIPTION:
+        return "A description is required.";
+      case TransactionErrors.MISSING_CATEGORY:
+        return "An category is required.";
+      case TransactionErrors.MISSING_AMOUNT:
+        return "An amount is required.";
+      case TransactionErrors.MISSING_ID:
+        return "An ID is required.";
+      case TransactionErrors.NOT_FOUND:
+        return "No transaction was found.";
+      default:
+        return "An unknown error has occurred.";
+    }
+  });
+}
