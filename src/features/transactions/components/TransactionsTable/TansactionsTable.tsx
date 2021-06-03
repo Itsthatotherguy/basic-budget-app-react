@@ -2,14 +2,26 @@ import React, { FC } from "react";
 import { Table } from "antd";
 import { Transaction } from "../../store/models";
 import dayjs from "dayjs";
-import numeral from "numeral";
-import ActionsDropdown from "../ActionsDropdown/ActionsDropdown";
-import { useAppSelector } from "../../../../app/hooks";
-import { selectAllTransactions } from "../../store/transactionsSlice";
+import { useAppDispatch, useAppSelector } from "../../../../app/hooks";
+import {
+  removeTransaction,
+  selectAllTransactions,
+  showUpdateTransactionModal,
+} from "../../store/transactionsSlice";
 import { ColumnsType } from "antd/lib/table";
+import ActionsDropdown from "../../../../app/components/ActionsDropdown/ActionsDropdown";
 
 const TransactionsTable: FC = () => {
+  const dispatch = useAppDispatch();
   const transactions = useAppSelector((state) => selectAllTransactions(state));
+
+  const handleClickEdit = (id: string) => {
+    dispatch(showUpdateTransactionModal(id));
+  };
+
+  const handleClickDelete = (id: string) => {
+    dispatch(removeTransaction(id));
+  };
 
   const columns = [
     {
@@ -74,7 +86,13 @@ const TransactionsTable: FC = () => {
         },
       }),
       render: (_: any, transaction: Transaction) => {
-        return <ActionsDropdown transaction={transaction} />;
+        return (
+          <ActionsDropdown
+            objectName="transaction"
+            onClickEdit={() => handleClickEdit(transaction.id)}
+            onClickDelete={() => handleClickDelete(transaction.id)}
+          />
+        );
       },
     },
   ];

@@ -1,16 +1,16 @@
-import { FC, useState } from "react";
+import { FC } from "react";
 import { Modal, Form, DatePicker, Input } from "antd";
 import { useAppDispatch, useAppSelector } from "../../../../app/hooks";
 import {
   hideUpdateTransactionModal,
   selectEditingTransaction,
-  selectIsUpdateTransactionModalVisible,
   updateTransaction,
 } from "../../store/transactionsSlice";
 import moment from "moment";
 import numeral from "numeral";
 import CategoriesSelect from "../CategoriesSelect/CategoriesSelect";
 import { UpdateTransactionDto } from "../../store/models";
+import ErrorAlert from "../../../../app/components/ErrorAlert/ErrorAlert";
 
 interface FormValues {
   date: moment.Moment;
@@ -21,14 +21,18 @@ interface FormValues {
 
 const UpdateTransactionModal: FC = () => {
   const dispatch = useAppDispatch();
-  const isVisible = useAppSelector((state) =>
-    selectIsUpdateTransactionModalVisible(state)
+  const isVisible = useAppSelector(
+    (state) => state.transactions.isUpdateTransactionModalVisible
+  );
+  const updatingStatus = useAppSelector(
+    (state) => state.transactions.updatingStatus
+  );
+  const updatingErrors = useAppSelector(
+    (state) => state.transactions.updatingErrors
   );
   const transaction = useAppSelector((state) =>
     selectEditingTransaction(state)
   );
-
-  const [isSaving, setIsSaving] = useState(false);
 
   let initialFormValues: FormValues = {
     date: moment(transaction?.date),
@@ -40,25 +44,17 @@ const UpdateTransactionModal: FC = () => {
   const [form] = Form.useForm();
 
   const handleClickOk = () => {
-    try {
-      setIsSaving(true);
+    form.validateFields().then((values: FormValues) => {
+      const dto: UpdateTransactionDto = {
+        id: transaction!.id,
+        date: moment(values.date).toISOString(),
+        description: values.description,
+        categoryId: values.category,
+        amount: +values.amount,
+      };
 
-      form.validateFields().then((values: FormValues) => {
-        const dto: UpdateTransactionDto = {
-          id: transaction!.id,
-          date: moment(values.date).toISOString(),
-          description: values.description,
-          categoryId: values.category,
-          amount: +values.amount,
-        };
-
-        dispatch(updateTransaction(dto));
-      });
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setIsSaving(false);
-    }
+      dispatch(updateTransaction(dto));
+    });
   };
 
   const handleClickCancel = () => {
@@ -73,8 +69,9 @@ const UpdateTransactionModal: FC = () => {
       cancelText="Cancel"
       onCancel={handleClickCancel}
       onOk={handleClickOk}
-      confirmLoading={isSaving}
+      confirmLoading={updatingStatus === "loading"}
     >
+      {updatingStatus === "fail" && <ErrorAlert errors={updatingErrors} />}
       <Form
         form={form}
         layout="vertical"

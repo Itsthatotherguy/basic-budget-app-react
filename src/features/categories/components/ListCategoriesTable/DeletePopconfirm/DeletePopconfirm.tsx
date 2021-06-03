@@ -1,8 +1,7 @@
-import { FC, useState } from "react";
+import { FC, useEffect } from "react";
 import { message, Popconfirm, Button } from "antd";
-import { useAppDispatch } from "../../../../../app/hooks";
+import { useAppDispatch, useAppSelector } from "../../../../../app/hooks";
 import { deleteCategory } from "../../../store/categoriesSlice";
-import { unwrapResult } from "@reduxjs/toolkit";
 
 interface Props {
   categoryId: string;
@@ -10,20 +9,18 @@ interface Props {
 
 const DeletePopconfirm: FC<Props> = ({ categoryId }) => {
   const dispatch = useAppDispatch();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const removingStatus = useAppSelector(
+    (state) => state.categories.removingStatus
+  );
+
+  useEffect(() => {
+    if (removingStatus === "fail") {
+      message.error("Category was not removed successfully. Please try again.");
+    }
+  }, [removingStatus]);
 
   const handleConfirm = async () => {
-    try {
-      setIsDeleting(true);
-
-      const actionResult = await dispatch(deleteCategory(categoryId));
-      unwrapResult(actionResult);
-    } catch (error) {
-      console.error(error);
-      message.error("The category could not be deleted. Please try again.");
-    } finally {
-      setIsDeleting(false);
-    }
+    dispatch(deleteCategory(categoryId));
   };
 
   return (

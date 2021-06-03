@@ -4,21 +4,18 @@ import PageContent from "../../app/components/PageContent/PageContent";
 import PageHeader from "../../app/components/PageHeader/PageHeader";
 import NewTransactionForm from "./components/NewTransactionForm/NewTransactionForm";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import {
-  selectIsNewTransactionFormVisible,
-  unhideNewTransactionForm,
-} from "./store/transactionsSlice";
+import { showNewTransactionForm } from "./store/transactionsSlice";
 import TransactionsTable from "./components/TransactionsTable/TansactionsTable";
 import UpdateTransactionModal from "./components/UpdateTransactionModal/UpdateTransactionModal";
 
 const Transactions: FC = () => {
   const dispatch = useAppDispatch();
   const isNewTransactionFormVisible = useAppSelector(
-    selectIsNewTransactionFormVisible
+    (state) => state.transactions.isAddNewTransactionFormVisible
   );
 
   const handleClickNewTransaction = () => {
-    dispatch(unhideNewTransactionForm());
+    dispatch(showNewTransactionForm());
   };
 
   return (

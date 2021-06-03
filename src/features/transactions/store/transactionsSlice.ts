@@ -17,18 +17,32 @@ import { RootState } from "../../../app/store";
 import { RequestStatus } from "../../../app/models";
 
 interface SliceState {
-  status: RequestStatus;
-  isAddNewTransactionFormVisible: boolean;
+  fetchingStatus: RequestStatus;
+  fetchingErrors: string[];
+  addingStatus: RequestStatus;
+  addingErrors: string[];
+  updatingStatus: RequestStatus;
+  updatingErrors: string[];
+  removingStatus: RequestStatus;
+  removingErrors: string[];
   editingId: EntityId;
+  isAddNewTransactionFormVisible: boolean;
   isUpdateTransactionModalVisible: boolean;
 }
 
 const adapter = createEntityAdapter<Transaction>();
 
 const initialState = adapter.getInitialState<SliceState>({
-  status: "idle",
-  isAddNewTransactionFormVisible: false,
+  fetchingStatus: "idle",
+  fetchingErrors: [],
+  addingStatus: "idle",
+  addingErrors: [],
+  updatingStatus: "idle",
+  updatingErrors: [],
+  removingStatus: "idle",
+  removingErrors: [],
   editingId: "",
+  isAddNewTransactionFormVisible: false,
   isUpdateTransactionModalVisible: false,
 });
 
@@ -113,7 +127,7 @@ const transactionsSlice = createSlice({
   name: "transactions",
   initialState,
   reducers: {
-    unhideNewTransactionForm: (state) => {
+    showNewTransactionForm: (state) => {
       state.isAddNewTransactionFormVisible = true;
     },
     hideNewTransactionForm: (state) => {
@@ -130,47 +144,57 @@ const transactionsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(fetchTransactions.pending, (state) => {
-      state.status = "loading";
+      state.fetchingStatus = "loading";
+      state.fetchingErrors = [];
     });
     builder.addCase(fetchTransactions.fulfilled, (state, action) => {
-      state.status = "succeeded";
+      state.fetchingStatus = "succeeded";
       adapter.upsertMany(state, action.payload);
     });
-    builder.addCase(fetchTransactions.rejected, (state) => {
-      state.status = "fail";
+    builder.addCase(fetchTransactions.rejected, (state, action) => {
+      state.fetchingStatus = "fail";
+      state.fetchingErrors = action.payload!;
     });
 
     builder.addCase(addNewTransaction.pending, (state) => {
-      state.status = "loading";
+      state.addingStatus = "loading";
+      state.addingErrors = [];
     });
     builder.addCase(addNewTransaction.fulfilled, (state, action) => {
       adapter.addOne(state, action.payload);
+      state.addingStatus = "succeeded";
     });
-    builder.addCase(addNewTransaction.rejected, (state) => {
-      state.status = "fail";
+    builder.addCase(addNewTransaction.rejected, (state, action) => {
+      state.addingStatus = "fail";
+      state.addingErrors = action.payload!;
     });
 
     builder.addCase(removeTransaction.pending, (state) => {
-      state.status = "loading";
+      state.removingStatus = "loading";
+      state.removingErrors = [];
     });
     builder.addCase(removeTransaction.fulfilled, (state, action) => {
       adapter.removeOne(state, action.payload);
+      state.removingStatus = "succeeded";
     });
-    builder.addCase(removeTransaction.rejected, (state) => {
-      state.status = "fail";
+    builder.addCase(removeTransaction.rejected, (state, action) => {
+      state.removingStatus = "fail";
+      state.removingErrors = action.payload!;
     });
 
     builder.addCase(updateTransaction.pending, (state, action) => {
-      state.status = "loading";
+      state.updatingStatus = "loading";
+      state.updatingErrors = [];
     });
     builder.addCase(updateTransaction.fulfilled, (state, action) => {
       adapter.updateOne(state, action.payload);
       state.isUpdateTransactionModalVisible = false;
       state.editingId = "";
-      state.status = "succeeded";
+      state.updatingStatus = "succeeded";
     });
     builder.addCase(updateTransaction.rejected, (state, action) => {
-      state.status = "fail";
+      state.updatingStatus = "fail";
+      state.updatingErrors = action.payload!;
     });
   },
 });
@@ -179,7 +203,7 @@ export default transactionsSlice.reducer;
 
 export const {
   hideNewTransactionForm,
-  unhideNewTransactionForm,
+  showNewTransactionForm,
   hideUpdateTransactionModal,
   showUpdateTransactionModal,
 } = transactionsSlice.actions;
@@ -188,16 +212,6 @@ export const { selectAll, selectById: selectTransactionById } =
   adapter.getSelectors((state: RootState) => state.transactions);
 
 export const selectTransactionsState = (state: RootState) => state.transactions;
-
-export const selectIsNewTransactionFormVisible = createSelector(
-  [selectTransactionsState],
-  (state) => state.isAddNewTransactionFormVisible
-);
-
-export const selectIsUpdateTransactionModalVisible = createSelector(
-  [selectTransactionsState],
-  (state) => state.isUpdateTransactionModalVisible
-);
 
 export const selectEditingTransaction = (state: RootState) =>
   selectTransactionById(state, state.transactions.editingId);
@@ -209,9 +223,4 @@ export const selectAllTransactions = createSelector(
       ...transaction,
       key: `transaction-${transaction.id}`,
     }))
-);
-
-export const selectTransactionsStatus = createSelector(
-  [selectTransactionsState],
-  (state) => state.status
 );

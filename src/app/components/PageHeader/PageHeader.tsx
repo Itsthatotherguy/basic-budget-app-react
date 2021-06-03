@@ -13,7 +13,6 @@ const PageHeader: FC<Props> = ({ title, extra, onBack = false }) => {
   const { goBack } = useHistory();
 
   const props: PageHeaderProps = {
-    ghost: false,
     title,
     extra,
   };
@@ -22,7 +21,7 @@ const PageHeader: FC<Props> = ({ title, extra, onBack = false }) => {
     props.onBack = goBack;
   }
 
-  return <AntPageHeader {...props} />;
+  return <AntPageHeader ghost={false} {...props} />;
 };
 
 export default PageHeader;

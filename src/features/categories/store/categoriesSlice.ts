@@ -3,6 +3,7 @@ import {
   createEntityAdapter,
   createSelector,
   createSlice,
+  PayloadAction,
   Update,
 } from "@reduxjs/toolkit";
 import { RootState } from "../../../app/store";
@@ -16,7 +17,19 @@ import { RequestStatus } from "../../../app/models";
 import * as client from "../categories-client";
 
 interface SliceState {
-  status: RequestStatus;
+  fetchingStatus: RequestStatus;
+  fetchingErrors: string[];
+  addingStatus: RequestStatus;
+  addingErrors: string[];
+  updatingStatus: RequestStatus;
+  updatingErrors: string[];
+  removingStatus: RequestStatus;
+  removingErrors: string[];
+
+  isNewCategoryModalVisible: boolean;
+  isUpdateCategoryModalVisible: boolean;
+
+  editingId: string;
 }
 
 const adapter = createEntityAdapter<Category>({
@@ -29,7 +42,22 @@ const adapter = createEntityAdapter<Category>({
 });
 
 const initialState = adapter.getInitialState<SliceState>({
-  status: "idle",
+  fetchingStatus: "idle",
+  fetchingErrors: [],
+
+  addingStatus: "idle",
+  addingErrors: [],
+
+  updatingStatus: "idle",
+  updatingErrors: [],
+
+  removingStatus: "idle",
+  removingErrors: [],
+
+  isNewCategoryModalVisible: false,
+  isUpdateCategoryModalVisible: false,
+
+  editingId: "",
 });
 
 export const fetchCategories = createAsyncThunk<
@@ -110,55 +138,95 @@ export const deleteCategory = createAsyncThunk<
 export const categoriesSlice = createSlice({
   name: "categories",
   initialState,
-  reducers: {},
+  reducers: {
+    setAddingStatusToIdle: (state) => {
+      state.addingStatus = "idle";
+    },
+    setUpdatingStatusToIdle: (state) => {
+      state.updatingStatus = "idle";
+    },
+
+    showNewCategoryModal: (state) => {
+      state.isNewCategoryModalVisible = true;
+    },
+    hideNewCategoryModal: (state) => {
+      state.isNewCategoryModalVisible = false;
+    },
+
+    showUpdateCategoryModal: (state, action: PayloadAction<string>) => {
+      state.isUpdateCategoryModalVisible = true;
+      state.editingId = action.payload;
+    },
+    hideUpdateCategoryModal: (state) => {
+      state.isUpdateCategoryModalVisible = false;
+      state.editingId = "";
+    },
+  },
   extraReducers: (builder) => {
     builder.addCase(fetchCategories.pending, (state) => {
-      state.status = "loading";
+      state.fetchingStatus = "loading";
+      state.fetchingErrors = [];
     });
     builder.addCase(fetchCategories.fulfilled, (state, action) => {
-      state.status = "succeeded";
+      state.fetchingStatus = "succeeded";
       adapter.upsertMany(state, action.payload);
     });
-    builder.addCase(fetchCategories.rejected, (state) => {
-      state.status = "fail";
+    builder.addCase(fetchCategories.rejected, (state, action) => {
+      state.fetchingStatus = "fail";
+      state.fetchingErrors = action.payload!;
     });
 
-    // builder.addCase(addNewCategory.pending, (state) => {
-    //   state.status = "loading";
-    // });
+    builder.addCase(addNewCategory.pending, (state) => {
+      state.addingStatus = "loading";
+      state.addingErrors = [];
+    });
     builder.addCase(addNewCategory.fulfilled, (state, action) => {
-      state.status = "succeeded";
+      state.addingStatus = "succeeded";
       adapter.addOne(state, action.payload);
     });
-    // builder.addCase(addNewCategory.rejected, (state) => {
-    //   state.status = "fail";
-    // });
+    builder.addCase(addNewCategory.rejected, (state, action) => {
+      state.addingStatus = "fail";
+      state.addingErrors = action.payload!;
+    });
 
     builder.addCase(updateCategory.pending, (state) => {
-      state.status = "loading";
+      state.updatingStatus = "loading";
+      state.updatingErrors = [];
     });
     builder.addCase(updateCategory.fulfilled, (state, action) => {
-      state.status = "succeeded";
+      state.updatingStatus = "succeeded";
       adapter.updateOne(state, action.payload);
     });
-    builder.addCase(updateCategory.rejected, (state) => {
-      state.status = "fail";
+    builder.addCase(updateCategory.rejected, (state, action) => {
+      state.updatingStatus = "fail";
+      state.updatingErrors = action.payload!;
     });
 
     builder.addCase(deleteCategory.pending, (state) => {
-      state.status = "loading";
+      state.removingStatus = "loading";
+      state.removingErrors = [];
     });
     builder.addCase(deleteCategory.fulfilled, (state, action) => {
-      state.status = "succeeded";
+      state.removingStatus = "succeeded";
       adapter.removeOne(state, action.payload);
     });
-    builder.addCase(deleteCategory.rejected, (state) => {
-      state.status = "fail";
+    builder.addCase(deleteCategory.rejected, (state, action) => {
+      state.removingStatus = "fail";
+      state.removingErrors = action.payload!;
     });
   },
 });
 
 export default categoriesSlice.reducer;
+
+export const {
+  setAddingStatusToIdle,
+  setUpdatingStatusToIdle,
+  showNewCategoryModal,
+  hideNewCategoryModal,
+  showUpdateCategoryModal,
+  hideUpdateCategoryModal,
+} = categoriesSlice.actions;
 
 export const {
   selectAll,
@@ -191,7 +259,5 @@ export const selectExpenseCategories = createSelector(
     )
 );
 
-export const selectCategoriesStatus = createSelector(
-  [selectCategoriesState],
-  (state) => state.status
-);
+export const selectEditingCategory = (state: RootState) =>
+  selectCategoryById(state, state.categories.editingId);

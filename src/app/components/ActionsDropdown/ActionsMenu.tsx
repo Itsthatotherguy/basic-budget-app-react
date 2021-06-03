@@ -1,36 +1,30 @@
-import { FC } from "react";
 import { Menu, Modal } from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
-import { useAppDispatch } from "../../../../app/hooks";
-import { Transaction } from "../../store/models";
-import {
-  removeTransaction,
-  showUpdateTransactionModal,
-} from "../../store/transactionsSlice";
+import { FC } from "react";
 
 const { confirm } = Modal;
 
 interface Props {
-  transaction: Transaction;
+  objectName: string;
+  onClickEdit: () => void;
+  onClickDelete: () => void;
 }
 
-const ActionsMenu: FC<Props> = ({ transaction }) => {
-  const dispatch = useAppDispatch();
-
+const ActionsMenu: FC<Props> = ({ objectName, onClickDelete, onClickEdit }) => {
   const handleClickEdit = () => {
-    dispatch(showUpdateTransactionModal(transaction.id));
+    onClickEdit();
   };
 
   const handleClickDelete = () => {
     confirm({
-      title: "Are you sure you want to delete this transaction?",
+      title: `Are you sure you want to delete this ${objectName.toLowerCase()}?`,
       icon: <ExclamationCircleOutlined />,
       onOk() {
-        dispatch(removeTransaction(transaction.id));
+        onClickDelete();
       },
     });
   };

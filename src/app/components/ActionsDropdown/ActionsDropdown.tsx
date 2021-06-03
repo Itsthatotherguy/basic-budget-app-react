@@ -2,16 +2,27 @@ import { FC } from "react";
 import { Dropdown, Button } from "antd";
 import { MoreOutlined } from "@ant-design/icons";
 import ActionsMenu from "./ActionsMenu";
-import { Transaction } from "../../store/models";
 
 interface Props {
-  transaction: Transaction;
+  objectName: string;
+  onClickEdit: () => void;
+  onClickDelete: () => void;
 }
 
-const ActionsDropdown: FC<Props> = ({ transaction }) => {
+const ActionsDropdown: FC<Props> = ({
+  objectName,
+  onClickDelete,
+  onClickEdit,
+}) => {
   return (
     <Dropdown
-      overlay={<ActionsMenu transaction={transaction} />}
+      overlay={
+        <ActionsMenu
+          objectName={objectName}
+          onClickDelete={onClickDelete}
+          onClickEdit={onClickEdit}
+        />
+      }
       trigger={["click"]}
     >
       <Button icon={<MoreOutlined />} />
